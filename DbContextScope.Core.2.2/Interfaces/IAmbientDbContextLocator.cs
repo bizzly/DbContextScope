@@ -12,7 +12,8 @@ namespace EntityFrameworkCore.DbContextScope.NetCore
     /// <summary>
     /// Convenience methods to retrieve ambient DbContext instances. 
     /// </summary>
-    public interface IAmbientDbContextLocator {
+    public interface IAmbientDbContextLocator
+    {
         /// <summary>
         /// If called within the scope of a DbContextScope, gets or creates 
         /// the ambient DbContext instance for the provided DbContext type. 
@@ -20,5 +21,6 @@ namespace EntityFrameworkCore.DbContextScope.NetCore
         /// Otherwise returns null. 
         /// </summary>
         TDbContext Get<TDbContext>() where TDbContext : DbContext;
+        TDbContext Get<TDbContext, TIdentity>(TIdentity identity) where TDbContext : DbContext;
     }
 }

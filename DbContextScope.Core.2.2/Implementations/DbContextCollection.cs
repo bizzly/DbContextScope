@@ -244,5 +244,37 @@ namespace EntityFrameworkCore.DbContextScope.NetCore
         private static TValue GetValueOrDefault<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key) {
             return dictionary.TryGetValue(key, out TValue value) ? value : default(TValue);
         }
+
+        public TDbContext Get<TDbContext, TIdentity>(TIdentity identity) where TDbContext : DbContext
+        {
+            if (_disposed)
+                throw new ObjectDisposedException("DbContextCollection");
+
+            var requestedType = typeof(TDbContext);
+
+            if (!_initializedDbContexts.ContainsKey(requestedType))
+            {
+                // First time we've been asked for this particular DbContext type.
+                // Create one, cache it and start its database transaction if needed.
+                var dbContext = _dbContextFactory != null
+                    ? _dbContextFactory.CreateDbContext<TDbContext, TIdentity>(identity)
+                    : Activator.CreateInstance<TDbContext>();
+
+                _initializedDbContexts.Add(requestedType, dbContext);
+
+                if (_readOnly)
+                {
+                    dbContext.ChangeTracker.AutoDetectChangesEnabled = false;
+                }
+
+                if (_isolationLevel.HasValue)
+                {
+                    var tran = dbContext.Database.BeginTransaction();
+                    _transactions.Add(dbContext, tran);
+                }
+            }
+
+            return _initializedDbContexts[requestedType] as TDbContext;
+        }
     }
 }

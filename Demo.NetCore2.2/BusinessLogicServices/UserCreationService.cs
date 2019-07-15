@@ -35,6 +35,7 @@ namespace Numero3.EntityFramework.Demo.BusinessLogicServices.NetCore
                     Name = userToCreate.Name,
                     Email = userToCreate.Email,
                     WelcomeEmailSent = false,
+                    TenantId = 13,
                     CreatedOn = DateTime.UtcNow
                 };
 

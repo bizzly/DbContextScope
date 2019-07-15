@@ -10,9 +10,17 @@ using Microsoft.EntityFrameworkCore;
 namespace EntityFrameworkCore.DbContextScope.NetCore
 {
     public class AmbientDbContextLocator : IAmbientDbContextLocator {
-        public TDbContext Get<TDbContext>() where TDbContext : DbContext {
+
+        public TDbContext Get<TDbContext>() where TDbContext : DbContext
+        {
             var ambientDbContextScope = DbContextScope.GetAmbientScope();
             return ambientDbContextScope?.DbContexts.Get<TDbContext>();
+        }
+
+        public TDbContext Get<TDbContext, TIdentity>(TIdentity identity) where TDbContext : DbContext
+        {
+            var ambientDbContextScope = DbContextScope.GetAmbientScope();
+            return ambientDbContextScope?.DbContexts.Get<TDbContext, TIdentity>(identity);
         }
     }
 }

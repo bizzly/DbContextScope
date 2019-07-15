@@ -1,4 +1,5 @@
-﻿using EntityFrameworkCore.DbContextScope.NetCore;
+﻿using Demo.NetCore2._2;
+using EntityFrameworkCore.DbContextScope.NetCore;
 using Numero3.EntityFramework.Demo.DatabaseContext.NetCore;
 using Numero3.EntityFramework.Demo.DomainModel.NetCore;
 using System;
@@ -24,10 +25,21 @@ namespace Numero3.EntityFramework.Demo.Repositories.NetCore
 	 */
     public class UserRepository : IUserRepository {
         private readonly IAmbientDbContextLocator _ambientDbContextLocator;
+        private readonly IIdentity _identity;
+
+        private UserManagementDbContext GetDbContext(IIdentity identity)
+        {
+            var dbContext = _ambientDbContextLocator.Get<UserManagementDbContext, IIdentity>(identity);
+
+            if (dbContext == null)
+                throw new InvalidOperationException("No ambient DbContext of type UserManagementDbContext found. This means that this repository method has been called outside of the scope of a DbContextScope. A repository must only be accessed within the scope of a DbContextScope, which takes care of creating the DbContext instances that the repositories need and making them available as ambient contexts. This is what ensures that, for any given DbContext-derived type, the same instance is used throughout the duration of a business transaction. To fix this issue, use IDbContextScopeFactory in your top-level business logic service method to create a DbContextScope that wraps the entire business transaction that your service method implements. Then access this repository within that scope. Refer to the comments in the IDbContextScope.cs file for more details.");
+
+            return dbContext;
+        }
 
         private UserManagementDbContext DbContext {
             get {
-                var dbContext = _ambientDbContextLocator.Get<UserManagementDbContext>();
+                var dbContext = _ambientDbContextLocator.Get<UserManagementDbContext, IIdentity>(_identity);
 
                 if (dbContext == null)
                     throw new InvalidOperationException("No ambient DbContext of type UserManagementDbContext found. This means that this repository method has been called outside of the scope of a DbContextScope. A repository must only be accessed within the scope of a DbContextScope, which takes care of creating the DbContext instances that the repositories need and making them available as ambient contexts. This is what ensures that, for any given DbContext-derived type, the same instance is used throughout the duration of a business transaction. To fix this issue, use IDbContextScopeFactory in your top-level business logic service method to create a DbContextScope that wraps the entire business transaction that your service method implements. Then access this repository within that scope. Refer to the comments in the IDbContextScope.cs file for more details.");
@@ -36,20 +48,31 @@ namespace Numero3.EntityFramework.Demo.Repositories.NetCore
             }
         }
 
-        public UserRepository(IAmbientDbContextLocator ambientDbContextLocator) {
+        public UserRepository(IAmbientDbContextLocator ambientDbContextLocator, IIdentity identity) {
             _ambientDbContextLocator = ambientDbContextLocator ?? throw new ArgumentNullException("ambientDbContextLocator");
+            _identity = identity ?? throw new ArgumentNullException("identity");
         }
 
         public User Get(Guid userId) {
-            return DbContext.Users.Find(userId);
+            //return DbContext.Users.Find(userId);
+            var dbContext = GetDbContext(_identity);
+
+            return dbContext.Users.Find(userId);
         }
 
         public Task<User> GetAsync(Guid userId) {
-            return DbContext.Users.FindAsync(userId);
+            //return DbContext.Users.FindAsync(userId);
+            var dbContext = GetDbContext(_identity);
+
+            return dbContext.Users.FindAsync(userId);
         }
 
-        public void Add(User user) {
-            DbContext.Users.Add(user);
+        public void Add(User user)
+        {
+            var dbContext = GetDbContext(_identity);
+
+           dbContext.Users.Add(user);
+            //DbContext.Users.Add(user);
         }
     }
 }

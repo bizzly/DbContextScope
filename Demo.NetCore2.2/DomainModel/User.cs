@@ -7,6 +7,7 @@ namespace Numero3.EntityFramework.Demo.DomainModel.NetCore
         public Guid Id { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
+        public int TenantId { get; set; }
         public int CreditScore { get; set; }
         public bool WelcomeEmailSent { get; set; }
         public DateTime CreatedOn { get; set; }

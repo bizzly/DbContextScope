@@ -1,4 +1,5 @@
-﻿using EntityFrameworkCore.DbContextScope.NetCore;
+﻿using Demo.NetCore2._2;
+using EntityFrameworkCore.DbContextScope.NetCore;
 using Numero3.EntityFramework.Demo.DatabaseContext.NetCore;
 using Numero3.EntityFramework.Demo.DomainModel.NetCore;
 using Numero3.EntityFramework.Demo.Repositories.NetCore;
@@ -22,7 +23,7 @@ namespace Numero3.EntityFramework.Demo.BusinessLogicServices.NetCore
             _userRepository = userRepository ?? throw new ArgumentNullException("userRepository");
         }
 
-        public User GetUser(Guid userId) {
+        public User GetUser(Guid userId, IIdentity identity) {
             /*
 			 * An example of using DbContextScope for read-only queries. 
 			 * Here, we access the Entity Framework DbContext directly from 
@@ -32,7 +33,7 @@ namespace Numero3.EntityFramework.Demo.BusinessLogicServices.NetCore
 			 * possible) since we created a read-only scope.
 			 */
             using (var dbContextScope = _dbContextScopeFactory.CreateReadOnly()) {
-                var dbContext = dbContextScope.DbContexts.Get<UserManagementDbContext>();
+                var dbContext = dbContextScope.DbContexts.Get<UserManagementDbContext, IIdentity>(identity);
                 var user = dbContext.Users.Find(userId);
 
                 if (user == null)
@@ -42,9 +43,9 @@ namespace Numero3.EntityFramework.Demo.BusinessLogicServices.NetCore
             }
         }
 
-        public IEnumerable<User> GetUsers(params Guid[] userIds) {
+        public IEnumerable<User> GetUsers(IIdentity identity, params Guid[] userIds) {
             using (var dbContextScope = _dbContextScopeFactory.CreateReadOnly()) {
-                var dbContext = dbContextScope.DbContexts.Get<UserManagementDbContext>();
+                var dbContext = dbContextScope.DbContexts.Get<UserManagementDbContext, IIdentity>(identity);
                 return dbContext.Users.Where(u => userIds.Contains(u.Id)).ToList();
             }
         }

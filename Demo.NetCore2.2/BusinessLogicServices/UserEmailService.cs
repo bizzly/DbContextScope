@@ -1,4 +1,5 @@
-﻿using EntityFrameworkCore.DbContextScope.NetCore;
+﻿using Demo.NetCore2._2;
+using EntityFrameworkCore.DbContextScope.NetCore;
 using Numero3.EntityFramework.Demo.DatabaseContext.NetCore;
 using Numero3.EntityFramework.Demo.DomainModel.NetCore;
 using System;
@@ -13,7 +14,7 @@ namespace Numero3.EntityFramework.Demo.BusinessLogicServices.NetCore
             _dbContextScopeFactory = dbContextScopeFactory ?? throw new ArgumentNullException("dbContextScopeFactory");
         }
 
-        public void SendWelcomeEmail(Guid userId) {
+        public void SendWelcomeEmail(Guid userId, IIdentity identity) {
             /*
 			 * Demo of forcing the creation of a new DbContextScope
 			 * to ensure that changes made to the model in this service 
@@ -43,7 +44,7 @@ namespace Numero3.EntityFramework.Demo.BusinessLogicServices.NetCore
             // Force the creation of a new DbContextScope so that the changes we make here are
             // guaranteed to get persisted regardless of what happens after this method has completed.
             using (var dbContextScope = _dbContextScopeFactory.Create(DbContextScopeOption.ForceCreateNew)) {
-                var dbContext = dbContextScope.DbContexts.Get<UserManagementDbContext>();
+                var dbContext = dbContextScope.DbContexts.Get<UserManagementDbContext, IIdentity>(identity);
                 var user = dbContext.Users.Find(userId);
 
                 if (user == null)

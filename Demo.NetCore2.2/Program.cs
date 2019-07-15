@@ -17,7 +17,11 @@ namespace Demo.NetCore2._2
             //-- Poor-man DI - build our dependencies by hand for this demo
             var dbContextScopeFactory = new DbContextScopeFactory(new DbContextFactory());
             var ambientDbContextLocator = new AmbientDbContextLocator();
-            var userRepository = new UserRepository(ambientDbContextLocator);
+            var identity = new Identity()
+            {
+                TenantId = 13
+            };
+            var userRepository = new UserRepository(ambientDbContextLocator, identity);
 
             var userCreationService = new UserCreationService(dbContextScopeFactory, userRepository);
             var userQueryService = new UserQueryService(dbContextScopeFactory, userRepository);
@@ -36,7 +40,7 @@ namespace Demo.NetCore2._2
                 Console.WriteLine("Done.\n");
 
                 Console.WriteLine("Trying to retrieve our newly created user from the data store...");
-                var mary = userQueryService.GetUser(marysSpec.Id);
+                var mary = userQueryService.GetUser(marysSpec.Id, identity);
                 Console.WriteLine("OK. Persisted user: {0}", mary);
 
                 Console.WriteLine("Press enter to continue...");
@@ -50,7 +54,7 @@ namespace Demo.NetCore2._2
                 Console.WriteLine("Done.\n");
 
                 Console.WriteLine("Trying to retrieve our newly created users from the data store...");
-                var createdUsers = userQueryService.GetUsers(johnSpec.Id, jeanneSpec.Id);
+                var createdUsers = userQueryService.GetUsers(identity, johnSpec.Id, jeanneSpec.Id);
                 Console.WriteLine("OK. Found {0} persisted users.", createdUsers.Count());
 
                 Console.WriteLine("Press enter to continue...");
@@ -73,7 +77,7 @@ namespace Demo.NetCore2._2
                 }
 
                 Console.WriteLine("Trying to retrieve our newly created users from the data store...");
-                var maybeCreatedUsers = userQueryService.GetUsers(julieSpec.Id, marcSpec.Id);
+                var maybeCreatedUsers = userQueryService.GetUsers(identity, julieSpec.Id, marcSpec.Id);
                 Console.WriteLine("Found {0} persisted users. If this number is 0, we're all good. If this number is not 0, we have a big problem.", maybeCreatedUsers.Count());
 
                 Console.WriteLine("Press enter to continue...");
@@ -105,7 +109,7 @@ namespace Demo.NetCore2._2
 
                 using (var parentScope = dbContextScopeFactory.Create())
                 {
-                    var parentDbContext = parentScope.DbContexts.Get<UserManagementDbContext>();
+                    var parentDbContext = parentScope.DbContexts.Get<UserManagementDbContext, IIdentity>(identity);
 
                     // Load John in the parent DbContext
                     var john = parentDbContext.Users.Find(johnSpec.Id);
@@ -113,7 +117,7 @@ namespace Demo.NetCore2._2
 
                     // Now call our SendWelcomeEmail() business logic service method, which will
                     // update John in a non-nested child context
-                    userEmailService.SendWelcomeEmail(johnSpec.Id);
+                    userEmailService.SendWelcomeEmail(johnSpec.Id, identity);
 
                     // Verify that we can see the modifications made to John by the SendWelcomeEmail() method
                     Console.WriteLine("After calling SendWelcomeEmail(), john.WelcomeEmailSent = " + john.WelcomeEmailSent);
@@ -128,7 +132,7 @@ namespace Demo.NetCore2._2
 
                 //-- Demonstration of DbContextScope and parallel programming
                 Console.WriteLine("Calculating and storing the credit score of all users in the database in parallel...");
-                userCreditScoreService.UpdateCreditScoreForAllUsers();
+                userCreditScoreService.UpdateCreditScoreForAllUsers(identity);
                 Console.WriteLine("Done.");
             }
             catch (Exception e)
@@ -150,10 +154,26 @@ namespace Demo.NetCore2._2
             {
                 var config = new DbContextOptionsBuilder<UserManagementDbContext>()
                     .UseInMemoryDatabase("InMemoryDatabase")
-                    .ConfigureWarnings(warnings => {
+                    .ConfigureWarnings(warnings =>
+                    {
                         warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning);
                     });
                 return new UserManagementDbContext(config.Options) as TDbContext;
+            }
+
+            throw new NotImplementedException(typeof(TDbContext).Name);
+        }
+
+        public TDbContext CreateDbContext<TDbContext, TIdentity>(TIdentity identity) where TDbContext : DbContext
+        {
+            if (typeof(TDbContext) == typeof(UserManagementDbContext))
+            {
+                var config = new DbContextOptionsBuilder<UserManagementDbContext>()
+                    .UseInMemoryDatabase("InMemoryDatabase")
+                    .ConfigureWarnings(warnings => {
+                        warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning);
+                    });
+                return new UserManagementDbContext(config.Options, (IIdentity) identity) as TDbContext;
             }
 
             throw new NotImplementedException(typeof(TDbContext).Name);

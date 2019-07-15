@@ -31,7 +31,9 @@ namespace EntityFrameworkCore.DbContextScope.NetCore
 	/// In that case, you'll want to implement this interface and pass it to the DbContextScope
 	/// you're creating so that DbContextScope is able to create your DbContext instances correctly. 
     /// </remarks>
-    public interface IDbContextFactory {
+    public interface IDbContextFactory
+    {
         TDbContext CreateDbContext<TDbContext>() where TDbContext : DbContext;
+        TDbContext CreateDbContext<TDbContext, TIdentity>(TIdentity identity) where TDbContext : DbContext;
     }
 }
